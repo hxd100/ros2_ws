@@ -1,0 +1,44 @@
+# 对应 ~/ros2_ws 的 tb6612_car + slam_toolbox
+car_slam:
+  description: 实车 SLAM 建图（底盘 + 雷达 + slam_toolbox）
+  meta:
+    robot: TB6612 双轮差速小车
+    project_type: single_robot
+    simulator: none
+    rmw: rmw_fastrtps_cpp
+    mode: robust
+    workspace: ${HOME}/ros2_ws
+    tags: [tb6612, 实车]
+    motion:
+      topic: /cmd_vel
+      type: Twist
+      verified: false
+  env:
+    RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+  runbook:
+  - id: bringup
+    title: 启动底盘与雷达
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch tb6612_car real_bringup.launch.py use_camera:=false
+      bg: true
+    ready:
+    - hz: /scan
+      min_hz: 2
+    - hz: /odom
+      min_hz: 10
+    timeout: 90
+    hint: 需要电机电池上电
+  - id: slam
+    title: 启动 slam_toolbox
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch slam_toolbox online_async_launch.py
+      bg: true
+    ready:
+    - nodes: slam_toolbox
+      min: 1
+    timeout: 60
+    hint: 建图时用键盘遥控走一圈，地图范围取决于场地大小
+  controls:
+  - id: save_map
+    label: 保存地图到 ~/my_map
+    cmd: ros2 run nav2_map_server map_saver_cli -f ${HOME}/my_map

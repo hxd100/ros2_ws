@@ -1,0 +1,45 @@
+# 对应 ~/ros2_ws 的 tb6612_car + nav2
+car_nav:
+  description: 实车 Nav2 导航（需要先建好地图）
+  meta:
+    robot: TB6612 双轮差速小车
+    project_type: single_robot
+    simulator: none
+    rmw: rmw_fastrtps_cpp
+    mode: robust
+    workspace: ${HOME}/ros2_ws
+    tags: [tb6612, 实车]
+    motion:
+      topic: /cmd_vel
+      type: Twist
+      verified: false
+  env:
+    RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+  runbook:
+  - id: bringup
+    title: 启动底盘与雷达
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch tb6612_car real_bringup.launch.py use_camera:=false
+      bg: true
+    ready:
+    - hz: /scan
+      min_hz: 2
+    - hz: /odom
+      min_hz: 10
+    timeout: 90
+  - id: nav2
+    title: 启动 Nav2（载入 ~/test_map.yaml）
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch tb6612_car nav2.launch.py map:=$HOME/test_map.yaml
+      bg: true
+    ready:
+    - nodes: planner_server
+      min: 1
+    - nodes: amcl
+      min: 1
+    timeout: 120
+    hint: 起来后必须在 RViz 里点 2D Pose Estimate 设初始位姿，AMCL 才会发布 map->odom
+  contracts:
+  - {topic: /cmd_vel, expected_type: geometry_msgs/msg/Twist, role: 速度指令}
+  - {topic: /odom, expected_type: nav_msgs/msg/Odometry, role: 里程计}
+  - {topic: /scan, expected_type: sensor_msgs/msg/LaserScan, role: 激光雷达}

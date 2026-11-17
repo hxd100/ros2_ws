@@ -1,0 +1,30 @@
+# 对应 ~/ros2_ws 的 tb6612_car + lidar_pkg + astra_camera
+car_sensors:
+  description: 不接底盘，只跑雷达与深度相机（底盘没通电时用）
+  meta:
+    robot: TB6612 双轮差速小车
+    project_type: single_robot
+    simulator: none
+    rmw: rmw_fastrtps_cpp
+    mode: robust
+    workspace: ${HOME}/ros2_ws
+    tags: [tb6612, 实车]
+    motion:
+      topic: /cmd_vel
+      type: Twist
+      verified: false
+  env:
+    RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+  runbook:
+  - id: sensors
+    title: 启动雷达 + 深度相机
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch tb6612_car real_bringup.launch.py use_chassis:=false
+      bg: true
+    ready:
+    - hz: /scan
+      min_hz: 2
+    - hz: /camera/color/image_raw
+      min_hz: 5
+    timeout: 120
+    hint: 雷达在 /dev/lidar，相机是 Orbbec Astra Pro Plus

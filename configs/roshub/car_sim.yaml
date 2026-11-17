@@ -1,0 +1,46 @@
+# my_bot 的 Gazebo（Ignition Fortress）仿真 —— 带图形界面
+car_sim:
+  description: Gazebo 仿真（带画面，窗口显示在 Jetson 自己的显示器上）
+  meta:
+    robot: my_bot
+    project_type: single_robot
+    simulator: gazebo
+    rmw: rmw_fastrtps_cpp
+    mode: robust
+    workspace: ${HOME}/ros2_ws
+    tags: [仿真, ignition, GUI]
+    motion:
+      topic: /cmd_vel
+      type: Twist
+      verified: false
+  env:
+    RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+    DISPLAY: ":1"
+    XAUTHORITY: /run/user/1000/gdm/Xauthority
+  runbook:
+  - id: sim
+    title: 启动仿真（带 Gazebo 窗口）
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch my_bot launch_sim.launch.py use_rviz:=false gz_args:="-r ${HOME}/ros2_ws/install/my_bot/share/my_bot/worlds/empty.world"
+      bg: true
+    ready:
+    - hz: /clock
+      min_hz: 1
+    - hz: /scan
+      min_hz: 2
+    timeout: 180
+    hint: 画面出现在 Jetson 接的显示器上；若没有登录桌面（DISPLAY 不是 :1），改用 car_sim_headless
+  - id: slam
+    title: 启动 slam_toolbox（仿真时间）
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true
+      bg: true
+    ready:
+    - nodes: slam_toolbox
+      min: 1
+    timeout: 60
+    hint: use_sim_time 必须为 true，否则 TF 对不上
+  controls:
+  - id: stop
+    label: 停车
+    cmd: 'ros2 topic pub -1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"'

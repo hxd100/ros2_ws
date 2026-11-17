@@ -1,0 +1,44 @@
+# my_bot 的 Gazebo 仿真 —— 无界面（仅物理引擎）
+car_sim_headless:
+  description: Gazebo 仿真（只跑 server 不显示窗口，SSH/无显示器时用）
+  meta:
+    robot: my_bot
+    project_type: single_robot
+    simulator: gazebo
+    rmw: rmw_fastrtps_cpp
+    mode: robust
+    workspace: ${HOME}/ros2_ws
+    tags: [仿真, ignition, headless]
+    motion:
+      topic: /cmd_vel
+      type: Twist
+      verified: false
+  env:
+    RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+  runbook:
+  - id: sim
+    title: 启动仿真（-s 无界面）
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch my_bot launch_sim.launch.py use_rviz:=false gz_args:="-r -s ${HOME}/ros2_ws/install/my_bot/share/my_bot/worlds/empty.world"
+      bg: true
+    ready:
+    - hz: /clock
+      min_hz: 1
+    - hz: /scan
+      min_hz: 2
+    timeout: 180
+    hint: 看不到窗口是正常的（-s 只启动物理引擎）；需要画面请用 car_sim
+  - id: slam
+    title: 启动 slam_toolbox（仿真时间）
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true
+      bg: true
+    ready:
+    - nodes: slam_toolbox
+      min: 1
+    timeout: 60
+    hint: use_sim_time 必须为 true
+  controls:
+  - id: stop
+    label: 停车
+    cmd: 'ros2 topic pub -1 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"'

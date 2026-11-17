@@ -1,0 +1,5 @@
+lidar_node:
+  ros__parameters:
+    port_name: "/dev/lidar"
+    # 和 my_bot 模型里的 laser_frame 保持一致（驱动代码的默认值也是 laser_frame）
+    frame_id: "laser_frame"

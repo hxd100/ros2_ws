@@ -1,0 +1,32 @@
+# Orbbec Astra Pro Plus 单独测试
+astra_cam:
+  description: 深度相机单独调试（彩色 / 深度 / IR）
+  meta:
+    robot: Astra Pro Plus
+    project_type: other
+    simulator: none
+    rmw: rmw_fastrtps_cpp
+    mode: prototype
+    workspace: ${HOME}/ros2_ws
+    tags: [相机, 视觉]
+  env:
+    RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+  steps:
+  - name: 启动相机驱动
+    cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch astra_camera astro_pro_plus.launch.xml depth_align_color:=true
+  runbook:
+  - id: cam
+    title: 启动 astra_camera
+    run:
+      cmd: source ${HOME}/ros2_ws/install/setup.bash && ros2 launch astra_camera astro_pro_plus.launch.xml depth_align_color:=true
+      bg: true
+    ready:
+    - hz: /camera/color/image_raw
+      min_hz: 5
+    - hz: /camera/depth/image_raw
+      min_hz: 5
+    timeout: 90
+    hint: 深度全 0 时先看 IR 是否也全黑：镜头被近处物体挡住（小于 0.6 m）就会这样
+  contracts:
+  - {topic: /camera/color/image_raw, expected_type: sensor_msgs/msg/Image, role: 彩色图像}
+  - {topic: /camera/depth/image_raw, expected_type: sensor_msgs/msg/Image, role: 深度图像}
